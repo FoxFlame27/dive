@@ -21,8 +21,8 @@ jobs:
             # The base kickstart: from the package if it exists, otherwise from Fedora's git.
             if [ ! -f /usr/share/spin-kickstarts/fedora-live-workstation.ks ]; then
               rm -rf /usr/share/spin-kickstarts
-              git clone --depth 1 -b f43 https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts \
-                || git clone --depth 1 https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts
+              git clone -q -b f43 https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts \
+                || git clone -q https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts
             fi
             ls /usr/share/spin-kickstarts/fedora-live-workstation.ks
             cp -r /src /dive-src
