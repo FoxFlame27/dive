@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# dive-bridge — run Windows programs on Dive.
+#
+#   dive-bridge open  <file.exe|file.msi>   # what the file manager calls on double-click
+#   dive-bridge run   <name> [args…]        # run an app that Bridge already set up
+#   dive-bridge list                        # apps Bridge knows about
+#   dive-bridge remove <name>               # delete an app's Windows environment
+#
+# Every program gets its own small Windows environment (a Wine prefix) under
+# ~/.local/share/dive/bridge/<name>, so programs never interfere with each other.
+set -euo pipefail
+
+BASE="${XDG_DATA_HOME:-$HOME/.local/share}/dive/bridge"
+LOGDIR="$BASE/.logs"
+mkdir -p "$BASE" "$LOGDIR"
+
+say()    { command -v notify-send >/dev/null && notify-send -i dive "Dive Bridge" "$1" || echo "[dive-bridge] $1"; }
+fail()   { command -v zenity >/dev/null && zenity --error --title="Dive Bridge" --text="$1" 2>/dev/null || echo "[dive-bridge] $1" >&2; exit 1; }
+need_wine() {
+  command -v wine >/dev/null || fail "Wine is not installed, so Windows programs cannot run.\nOpen Console and run:  sudo dnf install wine winetricks"
+  [[ "$(uname -m)" == "x86_64" ]] || fail "Windows programs need an x86_64 PC. This machine is $(uname -m)."
+}
+slug() { basename "$1" | sed -E 's/\.(exe|msi)$//I; s/[^A-Za-z0-9._-]+/-/g; s/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
+
+# Wine settings that make most things behave.
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-winemenubuilder.exe=d}"   # we create our own launchers
+export WINEARCH=win64
+
+prefix_for() { echo "$BASE/$1"; }
+
+prepare_prefix() {  # $1 = name
+  local p; p="$(prefix_for "$1")"
+  if [[ ! -f "$p/system.reg" ]]; then
+    say "Setting up a Windows environment for $1. The first time takes a minute."
+    WINEPREFIX="$p" wineboot -u >"$LOGDIR/$1.boot.log" 2>&1
+    # Sensible extras, best effort: fonts, C++ runtime, DirectX → Vulkan.
+    if command -v winetricks >/dev/null; then
+      WINEPREFIX="$p" winetricks -q corefonts vcrun2022 >"$LOGDIR/$1.tricks.log" 2>&1 || true
+      WINEPREFIX="$p" winetricks -q dxvk >>"$LOGDIR/$1.tricks.log" 2>&1 || true
+    fi
+    # Windows-like look inside the prefix.
+    WINEPREFIX="$p" wine reg add 'HKCU\Control Panel\Desktop' /v FontSmoothing /t REG_SZ /d 2 /f >/dev/null 2>&1 || true
+    WINEPREFIX="$p" wine reg add 'HKCU\Control Panel\Desktop' /v FontSmoothingType /t REG_DWORD /d 2 /f >/dev/null 2>&1 || true
+  fi
+  echo "$p"
+}
+
+make_launcher() {  # $1 name, $2 exe path (inside prefix or absolute), $3 pretty name
+  local dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+  mkdir -p "$dir"
+  cat > "$dir/dive-bridge-$1.desktop" <<DESK
+[Desktop Entry]
+Type=Application
+Name=$3
+Comment=Windows program, runs through Dive Bridge
+Exec=dive-bridge run $1
+Icon=dive
+Categories=Dive;Windows;
+Keywords=exe;windows;bridge;
+StartupNotify=true
+DESK
+  update-desktop-database "$dir" 2>/dev/null || true
+}
+
+find_installed_exes() {  # $1 prefix — .exe files that appeared under Program Files
+  find "$1/drive_c/Program Files" "$1/drive_c/Program Files (x86)" -maxdepth 3 -iname '*.exe' 2>/dev/null \
+    | grep -viE 'unins|setup|update|crash|helper|report|redist|vc_' || true
+}
+
+cmd_open() {
+  need_wine
+  local file="$1"; [[ -f "$file" ]] || fail "File not found: $file"
+  local name; name="$(slug "$file")"
+  local p; p="$(prepare_prefix "$name")"
+  local before after newexe
+  before="$(find_installed_exes "$p" | sort)"
+  say "Opening $(basename "$file")…"
+  local abs; abs="$(readlink -f "$file")"
+  if [[ "$abs" =~ \.[mM][sS][iI]$ ]]; then
+    WINEPREFIX="$p" wine msiexec /i "$abs" >"$LOGDIR/$name.run.log" 2>&1 || true
+  else
+    WINEPREFIX="$p" wine "$abs" >"$LOGDIR/$name.run.log" 2>&1 || true
+  fi
+  after="$(find_installed_exes "$p" | sort)"
+  newexe="$(comm -13 <(echo "$before") <(echo "$after") | head -1 || true)"
+  if [[ -n "$newexe" ]]; then
+    # It was an installer. Remember the installed program and add it to the app grid.
+    local pretty; pretty="$(basename "$newexe" .exe)"
+    echo "$newexe" > "$p/.dive-main-exe"
+    make_launcher "$name" "$newexe" "$pretty"
+    say "$pretty is installed. Find it in All apps."
+  elif [[ ! -f "$p/.dive-main-exe" ]]; then
+    # A portable program: remember it so it can be launched again from the app grid.
+    echo "$abs" > "$p/.dive-main-exe"
+    make_launcher "$name" "$abs" "$(basename "$abs" .exe)"
+  fi
+}
+
+cmd_run() {
+  need_wine
+  local name="$1"; shift || true
+  local p; p="$(prefix_for "$name")"
+  [[ -f "$p/.dive-main-exe" ]] || fail "Bridge does not know an app called '$name'. Try: dive-bridge list"
+  local exe; exe="$(cat "$p/.dive-main-exe")"
+  cd "$(dirname "$exe")"
+  exec env WINEPREFIX="$p" wine "$exe" "$@" >"$LOGDIR/$name.run.log" 2>&1
+}
+
+cmd_list() {
+  local d
+  for d in "$BASE"/*/; do
+    [[ -f "$d/.dive-main-exe" ]] || continue
+    printf '%-28s %s\n' "$(basename "$d")" "$(cat "$d/.dive-main-exe")"
+  done
+}
+
+cmd_remove() {
+  local name="$1"; local p; p="$(prefix_for "$name")"
+  [[ -d "$p" ]] || fail "No app called '$name'."
+  rm -rf "$p" "${XDG_DATA_HOME:-$HOME/.local/share}/applications/dive-bridge-$name.desktop"
+  say "Removed $name."
+}
+
+case "${1:-}" in
+  open)   shift; [[ $# -ge 1 ]] || fail "Usage: dive-bridge open <file.exe>"; cmd_open "$1";;
+  run)    shift; [[ $# -ge 1 ]] || fail "Usage: dive-bridge run <name>"; cmd_run "$@";;
+  list)   cmd_list;;
+  remove) shift; [[ $# -ge 1 ]] || fail "Usage: dive-bridge remove <name>"; cmd_remove "$1";;
+  *)      sed -n '2,10p' "$0"; exit 1;;
+esac

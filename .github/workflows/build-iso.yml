@@ -1,0 +1,38 @@
+# Builds the Dive installer ISO on GitHub's servers and attaches it to a release.
+# Trigger: push a tag like v0.1, or run it by hand from the Actions tab.
+name: Build Dive ISO
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build inside a privileged Fedora container
+        run: |
+          docker run --rm --privileged -v "$PWD:/src" -v /dev:/dev fedora:43 bash -c '
+            set -euo pipefail
+            dnf install -y lorax-lmc-novirt spin-kickstarts pykickstart anaconda-tui xorriso git
+            cp -r /src /dive-src
+            ksflatten -c /src/distro/dive-live.ks -o /tmp/dive-flat.ks
+            mkdir -p /src/out
+            VER=$(sed -n "s/^DIVE_VERSION=\"\(.*\)\"/\1/p" /src/distro/dive-setup.sh)
+            livemedia-creator --make-iso --no-virt --ks /tmp/dive-flat.ks --resultdir /tmp/lmc \
+              --project Dive --releasever 43 --volid DIVE_LIVE --iso-name "Dive-${VER}-x86_64.iso" \
+              --iso-only --logfile /tmp/lmc.log --tmp /var/tmp || { tail -50 /tmp/lmc.log; exit 1; }
+            mv /tmp/lmc/*.iso /src/out/
+            ls -lh /src/out
+          '
+      - name: Check the image fits on FAT32 (needed for install-from-Windows)
+        run: |
+          ISO=$(ls out/*.iso); SIZE=$(stat -c %s "$ISO"); echo "ISO size: $SIZE bytes"
+          [ "$SIZE" -lt 4294967295 ] || { echo "ISO is over 4 GB, the Windows installer cannot copy it to FAT32. Remove packages in distro/dive-live.ks."; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with: { name: dive-iso, path: out/*.iso }
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with: { files: out/*.iso }

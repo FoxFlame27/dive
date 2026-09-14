@@ -1,0 +1,78 @@
+# Dive system defaults. Users can still change everything in Settings.
+
+[org/gnome/shell]
+enabled-extensions=['dash-to-dock@micxgx.gmail.com', 'arcmenu@arcmenu.com', 'clipboard-indicator@tudmotu.com', 'dive-hoverbar@dive.sh']
+favorite-apps=['org.gnome.Nautilus.desktop', 'org.gnome.Epiphany.desktop', 'org.gnome.Console.desktop', 'org.gnome.Settings.desktop', 'org.gnome.Loupe.desktop', 'org.gnome.Music.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Software.desktop', 'dive-bridge.desktop']
+
+[org/gnome/shell/keybindings]
+show-screenshot-ui=['<Super><Shift>s']
+toggle-application-view=['<Super>a']
+toggle-overview=['<Super>Tab']
+
+[org/gnome/mutter]
+overlay-key='Super_L'
+
+[org/gnome/desktop/wm/keybindings]
+switch-applications=['<Alt>Tab']
+switch-windows=['<Super>grave']
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+accent-color='blue'
+enable-hot-corners=false
+clock-show-weekday=true
+font-name='Noto Sans 11'
+document-font-name='Noto Sans 11'
+monospace-font-name='Noto Sans Mono 10'
+
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/dive/dive-deep.png'
+picture-uri-dark='file:///usr/share/backgrounds/dive/dive-deep.png'
+picture-options='zoom'
+primary-color='#07182b'
+
+[org/gnome/desktop/screensaver]
+picture-uri='file:///usr/share/backgrounds/dive/dive-deep.png'
+
+[org/gnome/shell/extensions/dash-to-dock]
+dock-position='BOTTOM'
+dock-fixed=true
+extend-height=false
+show-apps-at-top=false
+show-show-apps-button=true
+show-trash=false
+show-mounts=false
+dash-max-icon-size=44
+icon-size-fixed=true
+apply-custom-theme=false
+custom-theme-shrink=true
+transparency-mode='FIXED'
+background-opacity=0.55
+running-indicator-style='DOTS'
+click-action='focus-minimize-or-previews'
+scroll-action='cycle-windows'
+hot-keys=false
+disable-overview-on-startup=true
+
+[org/gnome/shell/extensions/arcmenu]
+menu-layout='Windows'
+menu-button-icon='Custom_Icon'
+custom-menu-button-icon='/usr/share/dive/dive-logo.png'
+menu-button-icon-size=26
+position-in-panel='Left'
+show-activities-button=false
+menu-hotkey='Super_L'
+enable-menu-hotkey=true
+menu-width=460
+menu-height=620
+search-entry-border-radius=(true, 25)
+windows-layout-extra-shortcuts=[['Documents', 'folder-documents-symbolic', 'ArcMenu_Documents'], ['Downloads', 'folder-download-symbolic', 'ArcMenu_Downloads'], ['Pictures', 'folder-pictures-symbolic', 'ArcMenu_Pictures']]
+
+[org/gnome/shell/extensions/clipboard-indicator]
+toggle-menu=['<Super>v']
+history-size=50
+display-mode=0
+enable-keybindings=true
+
+[org/gnome/settings-daemon/plugins/media-keys]
+screensaver=['<Super>l']

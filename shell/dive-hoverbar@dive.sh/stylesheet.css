@@ -1,0 +1,5 @@
+/* Dive: a slightly translucent top bar so it reads as an overlay, not a strip. */
+#panel {
+  background-color: rgba(12, 24, 40, 0.78);
+  border-bottom: 1px solid rgba(160, 200, 230, 0.14);
+}

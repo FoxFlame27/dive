@@ -1,0 +1,21 @@
+{
+  "name": "dive-demo",
+  "productName": "Dive",
+  "version": "0.1.0",
+  "description": "Dive desktop demo",
+  "main": "main.js",
+  "scripts": {
+    "prestart": "cp ../prototype/dive.html ./dive.html",
+    "start": "electron .",
+    "prebuild": "cp ../prototype/dive.html ./dive.html",
+    "build": "electron-packager . Dive --platform=darwin --arch=arm64 --out=out --overwrite --icon=icon.icns --app-bundle-id=sh.dive.demo --ignore=node_modules --ignore=^/out && cp icon.icns out/Dive-darwin-arm64/Dive.app/Contents/Resources/electron.icns && touch out/Dive-darwin-arm64/Dive.app",
+    "build:win": "electron-packager . Dive --platform=win32 --arch=x64 --out=out --overwrite --icon=icon.ico --ignore=node_modules --ignore=^/out"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "@electron/packager": "^18.3.0"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

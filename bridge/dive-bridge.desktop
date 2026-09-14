@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Dive Bridge
+GenericName=Windows programs
+Comment=Open and install Windows programs (.exe, .msi)
+Exec=dive-bridge open %f
+Icon=dive
+Terminal=false
+Categories=System;Utility;
+MimeType=application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;application/x-msi;
+Keywords=exe;windows;wine;
+NoDisplay=false

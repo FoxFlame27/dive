@@ -1,0 +1,83 @@
+<title>Dive on the Razer</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#15181d;--muted:#5b6470;--line:#dde1e6;--acc:#1b6fd6;--code:#eef1f5;--warn:#fff4e5;--warn-line:#f0b458;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0e13;--fg:#e6ebf1;--muted:#8c98a6;--line:#232a33;--acc:#5aaaff;--code:#141a22;--warn:#2b2110;--warn-line:#c98a2c}}
+:root[data-theme="dark"]{--bg:#0b0e13;--fg:#e6ebf1;--muted:#8c98a6;--line:#232a33;--acc:#5aaaff;--code:#141a22;--warn:#2b2110;--warn-line:#c98a2c}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+main{max-width:70ch;margin:0 auto}
+h1{font-size:30px;letter-spacing:-.02em;line-height:1.15;margin:0 0 8px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 28px}
+h2{font-size:21px;margin:40px 0 10px;padding-top:20px;border-top:1px solid var(--line);letter-spacing:-.01em}
+h3{font-size:17px;margin:24px 0 6px}
+ol,ul{padding-left:22px}li{margin:6px 0}
+code{font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;font-size:.92em;background:var(--code);padding:.1em .4em;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:14px;line-height:1.5}
+pre code{background:none;padding:0}
+.warn{background:var(--warn);border-left:4px solid var(--warn-line);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0}
+.time{color:var(--muted);font-weight:400;font-size:14px;margin-left:6px}
+a{color:var(--acc)}
+</style>
+<main>
+<h1>Getting Dive onto the Razer, step by step</h1>
+<p class="lead">Three stages, in order. Stages 1 and 2 are safe. Stage 3 touches the laptop's disk, so it has a test first.</p>
+
+<h2>Before anything: back up the Razer<span class="time">30 min</span></h2>
+<ol>
+<li>Open <b>Settings → Privacy &amp; security → Device encryption</b> (or search “BitLocker”). If it is on, go to <b>aka.ms/myrecoverykey</b> while signed in with your Microsoft account and confirm the recovery key for this PC is listed. Write it down.</li>
+<li>Plug in an external drive with at least as much free space as C: uses. Install <b>Macrium Reflect Free</b> (macrium.com) and choose <b>Image this disk</b> on the Windows disk. Wait for it to finish. Keep the drive somewhere safe.</li>
+<li>In Macrium, choose <b>Other Tasks → Create Rescue Media</b> onto a USB stick. This is what you boot from if Windows ever refuses to start.</li>
+</ol>
+
+<h2>Stage 1: build the Dive image<span class="time">GitHub does the work</span></h2>
+<ol>
+<li>Create a free account at <b>github.com</b> if you do not have one, then create a new <b>public</b> repository called <code>dive</code>.</li>
+<li>On the Mac, in the folder <code>Operating system</code>, run:
+<pre><code>git init
+git add .
+git commit -m "Dive 0.1"
+git branch -M main
+git remote add origin https://github.com/YOUR-NAME/dive.git
+git push -u origin main
+git tag v0.1
+git push origin v0.1</code></pre></li>
+<li>Open the repository on GitHub → <b>Actions</b>. A job called <b>Build Dive ISO</b> starts on the tag. It takes 30 to 60 minutes.</li>
+<li>When it turns green, go to <b>Releases</b>. Release <code>v0.1</code> has <code>Dive-0.1-x86_64.iso</code> attached. That is the image. Its link looks like <code>https://github.com/YOUR-NAME/dive/releases/download/v0.1/Dive-0.1-x86_64.iso</code>.</li>
+</ol>
+<p>If the job turns red, open it and read the last lines. The two usual causes are a package name that changed in Fedora (edit <code>distro/dive-live.ks</code>) or the image growing over 4 GB (remove packages there).</p>
+<p><b>Fallback without GitHub:</b> install Fedora Workstation in a VM on the Razer (VirtualBox, 60 GB disk, 8 GB RAM), copy the folder in, run <code>sudo ./distro/build-iso.sh</code>, and copy <code>out/Dive-0.1-x86_64.iso</code> out through a shared folder.</p>
+
+<h2>Stage 2: point the installer at the image</h2>
+<ol>
+<li>Open <code>installer/windows/install.ps1</code> and replace the <code>IsoUrl</code> default near the top (the line starting with <code>[string]$IsoUrl</code>) with the release link from Stage 1.</li>
+<li>To get the one-line command working, the script has to be downloadable as raw text. The repository itself does that: the raw link is <code>https://raw.githubusercontent.com/YOUR-NAME/dive/main/installer/windows/install.ps1</code>. The command becomes:
+<pre><code>irm https://raw.githubusercontent.com/YOUR-NAME/dive/main/installer/windows/install.ps1 | iex</code></pre>
+A short domain like <code>dive.sh</code> is just a redirect to that link; buy one later if you want it.</li>
+</ol>
+
+<h2>Stage 3: test in a Windows VM, then the Razer</h2>
+<h3>3a. The test<span class="time">2 hours, no risk to the laptop</span></h3>
+<ol>
+<li>On the Razer, install <b>VirtualBox</b> (virtualbox.org). Download a <b>Windows 11</b> ISO from microsoft.com/software-download/windows11.</li>
+<li>New VM: Windows 11, 8 GB RAM, <b>120 GB</b> disk, and in Settings → System tick <b>Enable EFI</b> and <b>Enable Secure Boot</b>. Install Windows inside it (a local account is fine).</li>
+<li>Inside the VM, download <code>Dive-0.1-x86_64.iso</code> and <code>install.ps1</code>. Open <b>PowerShell as administrator</b> and run:
+<pre><code>Set-ExecutionPolicy Bypass -Scope Process -Force
+cd $env:USERPROFILE\Downloads
+.\install.ps1 -IsoPath .\Dive-0.1-x86_64.iso -SizeGB 60</code></pre></li>
+<li>Answer the questions, type <code>YES</code>, let it restart. You should see the Dive installer boot. Choose <b>Install Dive</b>, let it use the free space, reboot.</li>
+<li>You should now get the boot menu with <b>Dive</b> and <b>Windows Boot Manager</b>. Boot each one once. Log into Dive, walk through the setup, open Chromium, open Files → Windows files.</li>
+</ol>
+<p>If any step fails, that is exactly what the VM is for. Note what happened and fix it before going near the laptop. VirtualBox snapshots let you retry from step 3 in seconds.</p>
+
+<h3>3b. The Razer<span class="time">1 hour</span></h3>
+<div class="warn">Only after 3a passed completely, with the backup done and the recovery key written down.</div>
+<ol>
+<li>Plug the charger in. Close everything.</li>
+<li>Open PowerShell as administrator and run the one-line command from Stage 2 (or the same <code>.\install.ps1</code> call as in the VM). Pick how many GB Dive gets; 80 to 150 GB is sensible.</li>
+<li>Type <code>YES</code>, restart, choose <b>Install Dive</b>, install into the free space, reboot.</li>
+<li>The boot menu shows Dive and Windows. If Windows asks for the BitLocker recovery key on its first start, enter the key you wrote down; that happens once.</li>
+</ol>
+<p>Afterwards, in Dive: open Software and install the NVIDIA driver if games feel slow. Steam games run through Proton.</p>
+
+<h2>If Windows will not boot afterwards</h2>
+<p>Boot the Macrium rescue USB and restore the image from before. Nothing done by Dive survives that. This is why the backup comes first.</p>
+</main>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dive Setup
+Comment=Bring your files, apps and Wi‑Fi over from Windows
+Exec=dive-welcome --again
+Icon=dive
+Terminal=false
+Categories=System;Settings;
+Keywords=windows;migrate;import;setup;

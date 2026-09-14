@@ -1,0 +1,8 @@
+{
+  "uuid": "dive-hoverbar@dive.sh",
+  "name": "Dive Hover Bar",
+  "description": "Hides the top bar until the pointer touches the top edge of the screen. Part of Dive.",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "url": "https://dive.sh",
+  "version": 1
+}

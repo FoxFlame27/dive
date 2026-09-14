@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dive first-run setup
+Exec=dive-welcome
+Icon=dive
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-Phase=Applications
+X-GNOME-Autostart-Delay=3
