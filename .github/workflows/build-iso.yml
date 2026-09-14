@@ -17,16 +17,18 @@ jobs:
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true; df -h / | tail -1
       - name: Build inside a privileged Fedora container
         run: |
-          docker run --name divebuild --privileged -v "${{ github.workspace }}:/src:ro" fedora:43 bash -c '
+          docker run --name divebuild --privileged --cap-add=ALL --security-opt seccomp=unconfined --security-opt apparmor=unconfined --cgroupns=host -v /dev:/dev -v "${{ github.workspace }}:/src:ro" fedora:43 bash -c '
             set -euo pipefail
             cp -r /src /dive-src && echo "sources copied"
             dnf install -y --skip-unavailable lorax-lmc-novirt lorax pykickstart xorriso git
             git clone -q -b f43 https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts \
               || git clone -q https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts
             ls /usr/share/spin-kickstarts/fedora-live-workstation.ks
+            echo "=== probe: can this container install packages into a chroot? ==="
+            mkdir -p /out
+            dnf -y -v --installroot=/tmp/probe --releasever=43 --setopt=install_weak_deps=False install filesystem setup bash > /out/probe.log 2>&1 && echo "probe OK: $(rpm --root=/tmp/probe -qa | wc -l) packages" || { echo "probe FAILED"; tail -40 /out/probe.log; }
             ksflatten -c /dive-src/distro/dive-live.ks -o /tmp/dive-flat.ks
             VER=$(sed -n "s/^DIVE_VERSION=\"\(.*\)\"/\1/p" /dive-src/distro/dive-setup.sh)
-            mkdir -p /out
             livemedia-creator --make-iso --no-virt --ks /tmp/dive-flat.ks --resultdir /tmp/lmc \
               --project Dive --releasever 43 --volid DIVE_LIVE --iso-name "Dive-${VER}-x86_64.iso" \
               --iso-only --logfile /out/lmc.log --tmp /var/tmp || { echo "=== livemedia-creator failed, last log lines ==="; tail -80 /out/lmc.log; tail -40 /var/tmp/lmc-logs/anaconda/anaconda.log 2>/dev/null || true; exit 1; }
