@@ -44,7 +44,9 @@ Drag `Dive.app` to Applications if you want it in Launchpad. It is not code-sign
 
 ## Make it boot (real hardware or a VM)
 
-The bootable OS cannot be built on a Mac: the image tools (`livemedia-creator`, `xorriso`) only run on Fedora. Two ways to get there:
+**The installer image exists:** https://github.com/Foxflame27/dive/releases/tag/v0.1 (two parts, joined automatically by `installer/windows/install.ps1`, or by hand with `cat Dive-0.1-x86_64.iso.part* > Dive-0.1-x86_64.iso`). It is Fedora 43 Workstation live with the Dive kickstart and sources inside; the installed system runs `dive-setup.sh` and becomes Dive. GitHub Actions rebuilds it on every `v*` tag. Follow `GUIDE.md` for the VM test and the laptop install.
+
+Other ways to get a Dive system:
 
 1. **UTM on this Mac** (installed). Download the Fedora Workstation ISO for Apple Silicon (aarch64) from fedoraproject.org, create a VM in UTM with 8 GB RAM and 60 GB disk, install Fedora, then copy this folder in and run `sudo ./distro/dive-setup.sh`. That VM *is* Dive: the boot menu, the desktop, the setup app and the migration tool all run for real. Only Wine is missing on aarch64.
 2. **Any x86_64 PC or VM** with Fedora: run `sudo ./distro/build-iso.sh` to get `out/Dive-0.1-x86_64.iso`, boot a Windows VM from it (or run `installer/windows/install.ps1` inside the Windows VM) and you have the full journey, .exe support included.
