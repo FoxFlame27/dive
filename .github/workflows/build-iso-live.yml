@@ -46,7 +46,7 @@ jobs:
           [ "$SIZE" -lt 4294967295 ] || { echo "ISO is over 4 GB"; exit 1; }
       - name: Split for the release (GitHub allows 2 GB per file)
         run: |
-          cd out && ISO=$(ls *.iso) && sha256sum "$ISO" > SHA256SUMS
+          sudo chown -R "$USER" out && cd out && ISO=$(ls *.iso) && sha256sum "$ISO" > SHA256SUMS
           split -b 1500M -d -a 2 "$ISO" "$ISO.part" && ls -lh && rm "$ISO"
           echo "Parts:"; ls *.part*
       - name: Attach to the release
