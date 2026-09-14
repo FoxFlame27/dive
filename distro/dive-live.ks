@@ -6,7 +6,7 @@ lang en_US.UTF-8
 keyboard us
 timezone Europe/Zurich
 
-%packages
+%packages --ignoremissing
 wine
 winetricks
 ntfs-3g
@@ -19,10 +19,8 @@ jq
 unzip
 google-noto-sans-fonts
 google-noto-sans-mono-fonts
-# keep the image under 4 GB: it has to fit on a FAT32 partition when installed from Windows
--libreoffice*
--gnome-boxes
--rhythmbox
+# Note: the Workstation kickstart pins LibreOffice and Boxes, so they cannot be excluded here.
+# The image must stay under 4 GB (FAT32 limit for install-from-Windows); the workflow checks that.
 %end
 
 %post --nochroot --log=/tmp/dive-post-nochroot.log
