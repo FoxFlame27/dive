@@ -5,6 +5,8 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   iso:
     runs-on: ubuntu-latest
@@ -15,7 +17,14 @@ jobs:
         run: |
           docker run --rm --privileged -v "$PWD:/src" -v /dev:/dev fedora:43 bash -c '
             set -euo pipefail
-            dnf install -y lorax-lmc-novirt spin-kickstarts pykickstart anaconda-tui xorriso git
+            dnf install -y --skip-unavailable lorax-lmc-novirt lorax pykickstart xorriso git fedora-kickstarts spin-kickstarts
+            # The base kickstart: from the package if it exists, otherwise from Fedora's git.
+            if [ ! -f /usr/share/spin-kickstarts/fedora-live-workstation.ks ]; then
+              rm -rf /usr/share/spin-kickstarts
+              git clone --depth 1 -b f43 https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts \
+                || git clone --depth 1 https://pagure.io/fedora-kickstarts.git /usr/share/spin-kickstarts
+            fi
+            ls /usr/share/spin-kickstarts/fedora-live-workstation.ks
             cp -r /src /dive-src
             ksflatten -c /src/distro/dive-live.ks -o /tmp/dive-flat.ks
             mkdir -p /src/out
