@@ -36,7 +36,8 @@ jobs:
               rm -f "/w/out/Dive-${VER}-x86_64.iso"
               xorriso -indev /w/fedora.iso -outdev "/w/out/Dive-${VER}-x86_64.iso" -boot_image any replay -map /tmp/dive-src /dive-src -map /tmp/dive-install.ks /dive-install.ks -commit
             fi
-            xorriso -indev "/w/out/Dive-${VER}-x86_64.iso" -find /dive-install.ks /images/pxeboot/vmlinuz /EFI/BOOT/BOOTX64.EFI /LiveOS/squashfs.img 2>/dev/null | head
+            echo "=== ISO contents ==="; xorriso -indev "/w/out/Dive-${VER}-x86_64.iso" -ls / -ls /images/pxeboot -ls /EFI/BOOT -ls /LiveOS -ls /dive-src 2>/dev/null || true
+            xorriso -indev "/w/out/Dive-${VER}-x86_64.iso" -osirrox on -extract /dive-install.ks /tmp/check.ks 2>/dev/null && echo "kickstart present in ISO" || echo "WARNING: /dive-install.ks not found in ISO"
             ls -lh /w/out
           '
       - name: Check the image fits on FAT32 (needed for install-from-Windows)
