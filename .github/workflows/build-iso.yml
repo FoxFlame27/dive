@@ -33,7 +33,7 @@ jobs:
             ksflatten -c /dive-src/distro/dive-live.ks -o /tmp/dive-flat.ks
             VER=$(sed -n "s/^DIVE_VERSION=\"\(.*\)\"/\1/p" /dive-src/distro/dive-setup.sh)
             livemedia-creator --make-iso --no-virt --ks /tmp/dive-flat.ks --resultdir /tmp/lmc \
-              --project Dive --releasever 43 --volid DIVE_LIVE --iso-name "Dive-${VER}-x86_64.iso" \
+              --project Dive --releasever 43 --volid DIVE_LIVE --iso-name "Dive-${VER}-x86_64-full.iso" \
               --iso-only --logfile /out/lmc.log --tmp /var/tmp || { echo "=== livemedia-creator failed, last log lines ==="; tail -80 /out/lmc.log; tail -40 /var/tmp/lmc-logs/anaconda/anaconda.log 2>/dev/null || true; exit 1; }
             mv /tmp/lmc/*.iso /out/
             ls -lh /out
