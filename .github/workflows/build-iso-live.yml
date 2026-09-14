@@ -44,7 +44,20 @@ jobs:
         run: |
           ISO=$(ls out/*.iso); SIZE=$(stat -c %s "$ISO"); echo "ISO size: $SIZE bytes"
           [ "$SIZE" -lt 4294967295 ] || { echo "ISO is over 4 GB"; exit 1; }
+      - name: Split for the release (GitHub allows 2 GB per file)
+        run: |
+          cd out && ISO=$(ls *.iso) && sha256sum "$ISO" > SHA256SUMS
+          split -b 1500M -d -a 2 "$ISO" "$ISO.part" && ls -lh && rm "$ISO"
+          echo "Parts:"; ls *.part*
       - name: Attach to the release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
-        with: { files: out/*.iso }
+        with:
+          files: |
+            out/*.part*
+            out/SHA256SUMS
+          body: |
+            Dive installer image, built from Fedora 43 Workstation live with Dive injected.
+            The image is split into parts (GitHub's 2 GB limit). `install.ps1` downloads and joins them automatically.
+            To join by hand on Windows: `cmd /c copy /b Dive-0.1-x86_64.iso.part00+Dive-0.1-x86_64.iso.part01 Dive-0.1-x86_64.iso`
+            On Linux/macOS: `cat Dive-0.1-x86_64.iso.part* > Dive-0.1-x86_64.iso`

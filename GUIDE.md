@@ -25,7 +25,7 @@ git push origin v0.1
 ```
 
 3. Open the repository on GitHub → **Actions**. The job **Build Dive ISO (from Fedora live)** starts on the tag and takes about 10 minutes. (A second job, **Build Dive ISO**, tries a full custom image; it is experimental and may fail, which is fine.)
-4. When it turns green, go to **Releases** on the repository. Release `v0.1` has `Dive-0.1-x86_64.iso` attached. That is the image. Its link looks like `https://github.com/Foxflame27/dive/releases/download/v0.1/Dive-0.1-x86_64.iso`.
+4. When it turns green, go to **Releases** on the repository. Release `v0.1` has the image attached in two parts, `Dive-0.1-x86_64.iso.part00` and `.part01` (GitHub caps files at 2 GB). The installer downloads and joins them by itself. To join by hand on Windows: `cmd /c copy /b Dive-0.1-x86_64.iso.part00+Dive-0.1-x86_64.iso.part01 Dive-0.1-x86_64.iso`.
 
 If the job turns red, open it and read the last lines. The two usual causes are a package name that changed in Fedora (edit `distro/dive-live.ks`) or the image growing over 4 GB (remove packages there).
 
@@ -33,7 +33,7 @@ Fallback without GitHub: install Fedora Workstation in a VM on the Razer (Virtua
 
 ## Stage 2: point the installer at the image
 
-1. Open `installer/windows/install.ps1` and replace the `IsoUrl` default near the top (the line starting with `[string]$IsoUrl`) with the release link from Stage 1.
+1. `installer/windows/install.ps1` already points at this repository's `v0.1` release, so nothing to edit for now. For a later version, change the `IsoUrl` line near the top.
 2. To get the one-line command working, upload `install.ps1` somewhere it can be downloaded as raw text. The simplest is the GitHub repository itself: the raw link is `https://raw.githubusercontent.com/Foxflame27/dive/main/installer/windows/install.ps1`. Then the command is:
 
 ```powershell
@@ -48,13 +48,7 @@ A short domain like `dive.sh` is just a redirect to that link; buy one later if 
 
 1. On the Razer, install **VirtualBox** (virtualbox.org). Download a **Windows 11** ISO from microsoft.com/software-download/windows11.
 2. New VM: Windows 11, 8 GB RAM, **120 GB** disk, and in Settings → System tick **Enable EFI** and **Enable Secure Boot**. Install Windows inside it (any local account is fine, skip Microsoft sign-in).
-3. Inside the VM, download `Dive-0.1-x86_64.iso` and `install.ps1`. Open **PowerShell as administrator** and run:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-cd $env:USERPROFILE\Downloads
-.\install.ps1 -IsoPath .\Dive-0.1-x86_64.iso -SizeGB 60
-```
+3. Inside the VM, open **PowerShell as administrator** and run the one-line command from Stage 2. It downloads the image parts and joins them (about 2.7 GB), then asks how much space Dive gets; answer `60`.
 
 4. Answer the questions, type `YES`, let it restart. The Dive installer boots into a live desktop (it is Fedora's live image with Dive built in). Open **Install to Hard Drive**, let it use the free space, and reboot when it finishes. Keep the network connected: the installer downloads Dive's desktop pieces and Wine at the end of the install.
 5. You should now get the boot menu with **Dive** and **Windows Boot Manager**. Boot each one once. The first Dive login shows the Dive setup; walk through it, open Chromium, open Files → Windows files.

@@ -72,8 +72,24 @@ Ok "Dive gets $SizeGB GB"
 if (-not $IsoPath) {
   $IsoPath = Join-Path $env:TEMP 'Dive.iso'
   if (-not (Test-Path $IsoPath)) {
-    Say "Downloading Dive…"
-    try { Start-BitsTransfer -Source $IsoUrl -Destination $IsoPath -DisplayName 'Dive' } catch { Invoke-WebRequest -Uri $IsoUrl -OutFile $IsoPath }
+    Say "Downloading Dive (about 2.7 GB, in parts)…"
+    $parts = @(); $i = 0
+    while ($true) {
+      $u = "$IsoUrl.part$('{0:d2}' -f $i); $p = Join-Path $env:TEMP ("Dive.iso.part{0:d2}" -f $i)
+      try { $head = Invoke-WebRequest -Uri $u -Method Head -UseBasicParsing -MaximumRedirection 5 -ErrorAction Stop } catch { break }
+      Say "  part $($i + 1): $([math]::Round($head.Headers['Content-Length'][0] / 1MB)) MB"
+      try { Start-BitsTransfer -Source $u -Destination $p -DisplayName "Dive part $($i + 1)" } catch { Invoke-WebRequest -Uri $u -OutFile $p -UseBasicParsing }
+      $parts += $p; $i++
+    }
+    if ($parts.Count -eq 0) {
+      # single-file image
+      try { Start-BitsTransfer -Source $IsoUrl -Destination $IsoPath -DisplayName 'Dive' } catch { Invoke-WebRequest -Uri $IsoUrl -OutFile $IsoPath -UseBasicParsing }
+    } else {
+      Say "Joining $($parts.Count) parts…"
+      $out = [System.IO.File]::Create($IsoPath)
+      foreach ($p in $parts) { $in = [System.IO.File]::OpenRead($p); $in.CopyTo($out); $in.Close(); Remove-Item $p }
+      $out.Close()
+    }
   }
 }
 if (-not (Test-Path $IsoPath)) { Die "Image not found: $IsoPath" }
