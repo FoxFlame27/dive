@@ -26,7 +26,10 @@ jobs:
             ls /usr/share/spin-kickstarts/fedora-live-workstation.ks
             echo "=== probe: can this container install packages into a chroot? ==="
             mkdir -p /out
-            dnf -y -v --installroot=/tmp/probe --releasever=43 --setopt=install_weak_deps=False install filesystem setup bash > /out/probe.log 2>&1 && echo "probe OK: $(rpm --root=/tmp/probe -qa | wc -l) packages" || { echo "probe FAILED"; tail -40 /out/probe.log; }
+            mkdir -p /tmp/probe /tmp/rpms && dnf -y download --destdir=/tmp/rpms setup filesystem > /out/probe-dl.log 2>&1 || true
+            rpm -vv --root=/tmp/probe -i --nodeps /tmp/rpms/setup-*.rpm > /out/probe-rpm.log 2>&1 && echo "probe rpm OK" || { echo "probe rpm FAILED"; grep -iE "error|fail|warning" /out/probe-rpm.log | head -20; tail -15 /out/probe-rpm.log; }
+            dnf -y --installroot=/tmp/probe2 --releasever=43 --setopt=install_weak_deps=False install filesystem setup bash > /out/probe-dnf.log 2>&1 && echo "probe dnf OK: $(rpm --root=/tmp/probe2 -qa | wc -l) packages" || { echo "probe dnf FAILED"; tail -30 /out/probe-dnf.log; }
+            df -h /var/tmp | tail -1; mount | grep -E " / | /var/tmp " | head -3; cat /proc/sys/fs/protected_regular /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null || true
             ksflatten -c /dive-src/distro/dive-live.ks -o /tmp/dive-flat.ks
             VER=$(sed -n "s/^DIVE_VERSION=\"\(.*\)\"/\1/p" /dive-src/distro/dive-setup.sh)
             livemedia-creator --make-iso --no-virt --ks /tmp/dive-flat.ks --resultdir /tmp/lmc \
