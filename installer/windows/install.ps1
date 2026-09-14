@@ -142,7 +142,7 @@ set timeout=3
 set default=0
 search --no-floppy --set=root -l $Label
 menuentry 'Install Dive' {
-  linux /images/pxeboot/vmlinuz root=live:LABEL=$Label rd.live.image quiet rhgb
+  linux /images/pxeboot/vmlinuz root=live:LABEL=$Label rd.live.image inst.ks=hd:LABEL=$Label:/dive-install.ks quiet rhgb
   initrd /images/pxeboot/initrd.img
 }
 "@ | Set-Content "$esp\EFI\dive\grub.cfg" -Encoding ASCII

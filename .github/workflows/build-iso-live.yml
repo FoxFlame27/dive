@@ -29,7 +29,14 @@ jobs:
             VER=$(sed -n "s/^DIVE_VERSION=\"\(.*\)\"/\1/p" /w/distro/dive-setup.sh)
             mkdir -p /tmp/dive-src && cp -r /w/. /tmp/dive-src/ && rm -rf /tmp/dive-src/.git /tmp/dive-src/fedora.iso /tmp/dive-src/out
             mkdir -p /w/out
-            mkksiso --ks /w/distro/dive-install.ks --add /tmp/dive-src -V DIVE_LIVE /w/fedora.iso "/w/out/Dive-${VER}-x86_64.iso"
+            cp /w/distro/dive-install.ks /tmp/dive-install.ks
+            # Keep Fedora'"'"'s EFI boot image and volume label (the Windows installer writes its own boot entry).
+            if ! mkksiso --skip-mkefiboot --ks /tmp/dive-install.ks --add /tmp/dive-src /w/fedora.iso "/w/out/Dive-${VER}-x86_64.iso"; then
+              echo "mkksiso failed, falling back to xorriso (adds the files without touching boot menus)"
+              rm -f "/w/out/Dive-${VER}-x86_64.iso"
+              xorriso -indev /w/fedora.iso -outdev "/w/out/Dive-${VER}-x86_64.iso" -boot_image any replay -map /tmp/dive-src /dive-src -map /tmp/dive-install.ks /dive-install.ks -commit
+            fi
+            xorriso -indev "/w/out/Dive-${VER}-x86_64.iso" -find /dive-install.ks /images/pxeboot/vmlinuz /EFI/BOOT/BOOTX64.EFI /LiveOS/squashfs.img 2>/dev/null | head
             ls -lh /w/out
           '
       - name: Check the image fits on FAT32 (needed for install-from-Windows)
