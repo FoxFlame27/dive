@@ -24,7 +24,7 @@ git tag v0.1
 git push origin v0.1
 ```
 
-3. Open the repository on GitHub → **Actions**. A job called **Build Dive ISO** starts on the tag. It takes 30 to 60 minutes.
+3. Open the repository on GitHub → **Actions**. The job **Build Dive ISO (from Fedora live)** starts on the tag and takes about 10 minutes. (A second job, **Build Dive ISO**, tries a full custom image; it is experimental and may fail, which is fine.)
 4. When it turns green, go to **Releases** on the repository. Release `v0.1` has `Dive-0.1-x86_64.iso` attached. That is the image. Its link looks like `https://github.com/Foxflame27/dive/releases/download/v0.1/Dive-0.1-x86_64.iso`.
 
 If the job turns red, open it and read the last lines. The two usual causes are a package name that changed in Fedora (edit `distro/dive-live.ks`) or the image growing over 4 GB (remove packages there).
@@ -56,8 +56,8 @@ cd $env:USERPROFILE\Downloads
 .\install.ps1 -IsoPath .\Dive-0.1-x86_64.iso -SizeGB 60
 ```
 
-4. Answer the questions, type `YES`, let it restart. You should see the Dive installer boot. Choose **Install Dive**, let it use the free space, reboot.
-5. You should now get the boot menu with **Dive** and **Windows Boot Manager**. Boot each one once. Log into Dive, walk through the setup, open Chromium, open Files → Windows files.
+4. Answer the questions, type `YES`, let it restart. The Dive installer boots into a live desktop (it is Fedora's live image with Dive built in). Open **Install to Hard Drive**, let it use the free space, and reboot when it finishes. Keep the network connected: the installer downloads Dive's desktop pieces and Wine at the end of the install.
+5. You should now get the boot menu with **Dive** and **Windows Boot Manager**. Boot each one once. The first Dive login shows the Dive setup; walk through it, open Chromium, open Files → Windows files.
 
 If any step fails, that is exactly what the VM is for. Note what happened and fix it before going near the laptop. Snapshots in VirtualBox let you retry from step 3 in seconds.
 

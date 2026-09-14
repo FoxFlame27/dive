@@ -40,7 +40,7 @@ git remote add origin https://github.com/Foxflame27/dive.git
 git push -u origin main
 git tag v0.1
 git push origin v0.1</code></pre></li>
-<li>Open the repository on GitHub → <b>Actions</b>. A job called <b>Build Dive ISO</b> starts on the tag. It takes 30 to 60 minutes.</li>
+<li>Open the repository on GitHub → <b>Actions</b>. The job <b>Build Dive ISO (from Fedora live)</b> starts on the tag and takes about 10 minutes. (A second job, <b>Build Dive ISO</b>, tries a full custom image; it is experimental and may fail, which is fine.)</li>
 <li>When it turns green, go to <b>Releases</b>. Release <code>v0.1</code> has <code>Dive-0.1-x86_64.iso</code> attached. That is the image. Its link looks like <code>https://github.com/Foxflame27/dive/releases/download/v0.1/Dive-0.1-x86_64.iso</code>.</li>
 </ol>
 <p>If the job turns red, open it and read the last lines. The two usual causes are a package name that changed in Fedora (edit <code>distro/dive-live.ks</code>) or the image growing over 4 GB (remove packages there).</p>
@@ -63,8 +63,8 @@ A short domain like <code>dive.sh</code> is just a redirect to that link; buy on
 <pre><code>Set-ExecutionPolicy Bypass -Scope Process -Force
 cd $env:USERPROFILE\Downloads
 .\install.ps1 -IsoPath .\Dive-0.1-x86_64.iso -SizeGB 60</code></pre></li>
-<li>Answer the questions, type <code>YES</code>, let it restart. You should see the Dive installer boot. Choose <b>Install Dive</b>, let it use the free space, reboot.</li>
-<li>You should now get the boot menu with <b>Dive</b> and <b>Windows Boot Manager</b>. Boot each one once. Log into Dive, walk through the setup, open Chromium, open Files → Windows files.</li>
+<li>Answer the questions, type <code>YES</code>, let it restart. The Dive installer boots into a live desktop (it is Fedora's live image with Dive built in). Open <b>Install to Hard Drive</b>, let it use the free space, and reboot when it finishes. Keep the network connected: the installer downloads Dive's desktop pieces and Wine at the end of the install.</li>
+<li>You should now get the boot menu with <b>Dive</b> and <b>Windows Boot Manager</b>. Boot each one once. The first Dive login shows the Dive setup; walk through it, open Chromium, open Files → Windows files.</li>
 </ol>
 <p>If any step fails, that is exactly what the VM is for. Note what happened and fix it before going near the laptop. VirtualBox snapshots let you retry from step 3 in seconds.</p>
 

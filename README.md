@@ -11,7 +11,8 @@ Dive is a Linux system (Fedora + GNOME) with its own shell setup, boot menu, ins
 | `app/` | The Dive desktop as a real app (Electron). Inside it, Chromium loads real web pages, Files shows your real home folder, Terminal runs a real shell, Text Editor and Code read and write real files, Photos shows your real pictures, System Monitor reads real CPU and memory. `npm start` runs it, `npm run build` makes `app/out/Dive-darwin-arm64/Dive.app`. |
 | `prototype/dive.html` | Fully working demo of the whole journey. Every app on the desktop works (files, browser, terminal, settings, mail, calendar, music, games, code, Photoshop, Word…), plus right-click menus, quick settings, lock screen, dock position and wallpaper settings. |
 | `distro/dive-setup.sh` | Turns a Fedora Workstation into Dive. Used by the ISO build and for testing in a VM. |
-| `distro/dive-live.ks`, `distro/build-iso.sh` | Build the Dive installer image (`Dive-0.1-x86_64.iso`). |
+| `distro/dive-install.ks` | Kickstart injected into Fedora's live ISO: on install it copies the Dive sources in and runs the setup. This is how the released `Dive-0.1-x86_64.iso` is made (`.github/workflows/build-iso-live.yml`). |
+| `distro/dive-live.ks`, `distro/build-iso.sh` | Full custom live image build (experimental; fails inside GitHub's containers, works on a Fedora machine). |
 | `distro/files/dconf/00-dive` | System defaults: dock left, Windows-style menu, dark teal look, shortcuts. |
 | `distro/files/grub/theme.txt` | The boot menu theme (Windows and Dive side by side, 10 s countdown). |
 | `distro/files/art/` | Logo (`dive-logo.png`, the blue wave, plus an SVG fallback) and a generator for the wallpaper and boot background. |
