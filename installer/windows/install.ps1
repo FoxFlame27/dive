@@ -23,7 +23,7 @@
 [CmdletBinding()]
 param(
   [int]$SizeGB = 0,
-  [string]$IsoUrl = "https://github.com/dive-os/dive/releases/latest/download/Dive-x86_64.iso",
+  [string]$IsoUrl = "https://github.com/Foxflame27/dive/releases/download/v0.1/Dive-0.1-x86_64.iso",
   [string]$IsoPath = "",
   [switch]$NoRestart
 )

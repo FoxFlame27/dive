@@ -36,12 +36,12 @@ a{color:var(--acc)}
 git add .
 git commit -m "Dive 0.1"
 git branch -M main
-git remote add origin https://github.com/YOUR-NAME/dive.git
+git remote add origin https://github.com/Foxflame27/dive.git
 git push -u origin main
 git tag v0.1
 git push origin v0.1</code></pre></li>
 <li>Open the repository on GitHub → <b>Actions</b>. A job called <b>Build Dive ISO</b> starts on the tag. It takes 30 to 60 minutes.</li>
-<li>When it turns green, go to <b>Releases</b>. Release <code>v0.1</code> has <code>Dive-0.1-x86_64.iso</code> attached. That is the image. Its link looks like <code>https://github.com/YOUR-NAME/dive/releases/download/v0.1/Dive-0.1-x86_64.iso</code>.</li>
+<li>When it turns green, go to <b>Releases</b>. Release <code>v0.1</code> has <code>Dive-0.1-x86_64.iso</code> attached. That is the image. Its link looks like <code>https://github.com/Foxflame27/dive/releases/download/v0.1/Dive-0.1-x86_64.iso</code>.</li>
 </ol>
 <p>If the job turns red, open it and read the last lines. The two usual causes are a package name that changed in Fedora (edit <code>distro/dive-live.ks</code>) or the image growing over 4 GB (remove packages there).</p>
 <p><b>Fallback without GitHub:</b> install Fedora Workstation in a VM on the Razer (VirtualBox, 60 GB disk, 8 GB RAM), copy the folder in, run <code>sudo ./distro/build-iso.sh</code>, and copy <code>out/Dive-0.1-x86_64.iso</code> out through a shared folder.</p>
@@ -49,8 +49,8 @@ git push origin v0.1</code></pre></li>
 <h2>Stage 2: point the installer at the image</h2>
 <ol>
 <li>Open <code>installer/windows/install.ps1</code> and replace the <code>IsoUrl</code> default near the top (the line starting with <code>[string]$IsoUrl</code>) with the release link from Stage 1.</li>
-<li>To get the one-line command working, the script has to be downloadable as raw text. The repository itself does that: the raw link is <code>https://raw.githubusercontent.com/YOUR-NAME/dive/main/installer/windows/install.ps1</code>. The command becomes:
-<pre><code>irm https://raw.githubusercontent.com/YOUR-NAME/dive/main/installer/windows/install.ps1 | iex</code></pre>
+<li>To get the one-line command working, the script has to be downloadable as raw text. The repository itself does that: the raw link is <code>https://raw.githubusercontent.com/Foxflame27/dive/main/installer/windows/install.ps1</code>. The command becomes:
+<pre><code>irm https://raw.githubusercontent.com/Foxflame27/dive/main/installer/windows/install.ps1 | iex</code></pre>
 A short domain like <code>dive.sh</code> is just a redirect to that link; buy one later if you want it.</li>
 </ol>
 

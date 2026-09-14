@@ -18,14 +18,14 @@ git init
 git add .
 git commit -m "Dive 0.1"
 git branch -M main
-git remote add origin https://github.com/YOUR-NAME/dive.git
+git remote add origin https://github.com/Foxflame27/dive.git
 git push -u origin main
 git tag v0.1
 git push origin v0.1
 ```
 
 3. Open the repository on GitHub → **Actions**. A job called **Build Dive ISO** starts on the tag. It takes 30 to 60 minutes.
-4. When it turns green, go to **Releases** on the repository. Release `v0.1` has `Dive-0.1-x86_64.iso` attached. That is the image. Its link looks like `https://github.com/YOUR-NAME/dive/releases/download/v0.1/Dive-0.1-x86_64.iso`.
+4. When it turns green, go to **Releases** on the repository. Release `v0.1` has `Dive-0.1-x86_64.iso` attached. That is the image. Its link looks like `https://github.com/Foxflame27/dive/releases/download/v0.1/Dive-0.1-x86_64.iso`.
 
 If the job turns red, open it and read the last lines. The two usual causes are a package name that changed in Fedora (edit `distro/dive-live.ks`) or the image growing over 4 GB (remove packages there).
 
@@ -34,10 +34,10 @@ Fallback without GitHub: install Fedora Workstation in a VM on the Razer (Virtua
 ## Stage 2: point the installer at the image
 
 1. Open `installer/windows/install.ps1` and replace the `IsoUrl` default near the top (the line starting with `[string]$IsoUrl`) with the release link from Stage 1.
-2. To get the one-line command working, upload `install.ps1` somewhere it can be downloaded as raw text. The simplest is the GitHub repository itself: the raw link is `https://raw.githubusercontent.com/YOUR-NAME/dive/main/installer/windows/install.ps1`. Then the command is:
+2. To get the one-line command working, upload `install.ps1` somewhere it can be downloaded as raw text. The simplest is the GitHub repository itself: the raw link is `https://raw.githubusercontent.com/Foxflame27/dive/main/installer/windows/install.ps1`. Then the command is:
 
 ```powershell
-irm https://raw.githubusercontent.com/YOUR-NAME/dive/main/installer/windows/install.ps1 | iex
+irm https://raw.githubusercontent.com/Foxflame27/dive/main/installer/windows/install.ps1 | iex
 ```
 
 A short domain like `dive.sh` is just a redirect to that link; buy one later if you want it.
