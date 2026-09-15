@@ -105,6 +105,10 @@ MIME
 fi
 update-desktop-database /usr/share/applications || true
 
+# ---------------------------------------------------------------- Gaming
+log "Gaming: drivers, Steam, GameMode, tuning"
+bash "$ROOT/distro/dive-gaming.sh" || warn "gaming setup had errors (see above)"
+
 # ---------------------------------------------------------------- Migrate + Welcome
 log "Installing Dive Migrate and the first-run app"
 install -m755 "$ROOT/migrate/dive-migrate.py" /usr/bin/dive-migrate

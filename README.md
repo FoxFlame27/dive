@@ -96,6 +96,17 @@ Answer YES, let it restart. The firmware boots "Dive Installer", you choose Inst
 
 Do not run `install.ps1` on a real PC until Step 4 has passed in a VM. It resizes the system partition.
 
+## Gaming
+
+`distro/dive-gaming.sh` runs as part of the setup (or alone) and makes the installed system fast for games:
+
+- **Drivers:** RPM Fusion, the NVIDIA driver when an NVIDIA GPU is present, 32-bit Vulkan and Mesa for Steam.
+- **Tools:** Steam, GameMode, MangoHud (FPS overlay, Shift+F12), gamescope.
+- **Nothing in the background:** file indexing off, GNOME Software not autostarted, no background update checks, crash reporters and ModemManager off. `dive-gamemode on` also holds notifications, stops the remaining user services and switches to the performance power profile; GameMode runs it automatically around every game.
+- **Lower ping:** BBR congestion control with fair queueing, TCP fast open, Wi‑Fi power saving off.
+- **Kernel:** the memory-map limit Proton games need, low swappiness, no scheduler autogrouping.
+- **Desktop:** flat mouse profile (no acceleration), variable refresh rate on.
+
 ## Honest limits
 
 - **Wine is not Windows.** Most everyday programs and Steam games run. Anti-cheat games (Valorant, Fortnite), hardware drivers, and some Adobe and Office versions do not. Bridge should get a compatibility check (ProtonDB / WineHQ AppDB) before v1.
