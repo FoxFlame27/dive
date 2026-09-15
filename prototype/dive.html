@@ -595,6 +595,11 @@ webview{flex:1;display:flex;background:#fff}
 .desk.hc{--line:rgba(255,255,255,.3);--line-2:rgba(255,255,255,.5);--fg-2:rgba(255,255,255,.85);--fg-3:rgba(255,255,255,.7)}
 .desk.rm *{transition:none!important;animation:none!important}
 .trash-bar{display:flex;gap:.6cqw;align-items:center;padding:.6cqw .9cqw;background:var(--hover);border-radius:.5cqw;margin-bottom:.6cqw;font-size:.9cqw}
+.hud{position:absolute;left:.6cqw;top:.6cqw;z-index:46;font-family:var(--mono);font-size:.85cqw;line-height:1.35;color:#9dff8a;background:rgba(0,0,0,.55);padding:.4cqw .6cqw;border-radius:.3cqw;display:none;pointer-events:none;white-space:pre}
+.desk.gm .hud{display:block}
+.desk.gm .dock{opacity:.55}
+.gm-badge{position:absolute;right:.8cqw;top:.6cqw;z-index:46;font-size:.8cqw;font-weight:700;color:#fff;background:#16a34a;padding:.2cqw .6cqw;border-radius:.3cqw;display:none}
+.desk.gm .gm-badge{display:block}
 </style>
 
 <div class="page">
@@ -816,6 +821,7 @@ webview{flex:1;display:flex;background:#fff}
             <button class="cap" id="capBtn" title="Capture">Capture</button>
           </div>
         </div>
+        <div class="hud" id="hud"></div><div class="gm-badge">GAME MODE</div>
         <div class="switcher" id="switcher"></div>
         <div class="flash" id="flash"></div>
         <div class="toast" id="toast"><span class="th app-ico" id="toastIco"></span><div><b id="toastT"></b><span id="toastS"></span></div></div>
@@ -832,6 +838,7 @@ webview{flex:1;display:flex;background:#fff}
     <button data-key="grid"><kbd>Super</kbd><kbd>A</kbd> All apps</button>
     <button data-key="clip"><kbd>Super</kbd><kbd>V</kbd> Clipboard</button>
     <button data-key="lock"><kbd>Super</kbd><kbd>L</kbd> Lock</button>
+    <button data-key="game"><kbd>Super</kbd><kbd>G</kbd> Game Mode</button>
     <span>Top edge shows the bar</span>
     <span><kbd>Esc</kbd> closes</span>
   </div>
@@ -970,7 +977,7 @@ async function readNode(node){ if (node.text !== undefined) return node.text; if
 /* =============== STATE (settings) =============== */
 const state = Object.assign({
   v:2, scheme:'dark', accent:'#3aa0ff', wallpaper:'dive', dock:'bottom', name:'Raffael', avatar:'#3aa0ff', password:'dive', wifiNet:'HomeNet 5G', location:true, reports:true, stats:false, clock24:true, autotime:true, tz:'', admin:true,
-  dnd:false, notifApps:{}, largeText:false, highContrast:false, reduceMotion:false, lockDelay:5, natScroll:true, tapClick:true, mouseSpeed:50, kbdLayout:'English (US)', defaultBrowser:'web', defaultMail:'mail',
+  gameMode:false, fpsHud:true, vrr:true, mouseAccel:false, bgApps:false, dnd:false, notifApps:{}, largeText:false, highContrast:false, reduceMotion:false, lockDelay:5, natScroll:true, tapClick:true, mouseSpeed:50, kbdLayout:'English (US)', defaultBrowser:'web', defaultMail:'mail',
   wifi:true, bt:false, night:false, brightness:100, volume:55, powerMode:'balanced', notifs:[], setupDone:false, installed:[],
   pins:['files','web','term','settings','photos','music','chat','games','code'], menuPins:['files','web','term','settings','photos','music','chat','games','code','mail','cal','calc'],
 }, store.get('state', {}));
@@ -984,10 +991,24 @@ function applyState(){
   $$('.av').forEach(e => e.style.setProperty('--avc', state.avatar));
   $('#menuName').textContent = state.name; $('#helloName').textContent = `Welcome, ${state.name}`; $('#lockName').textContent = state.name;
   $('#qsWifiIco').style.opacity = state.wifi ? 1 : .35;
-  const scr = $('#screen'); scr.style.fontSize = state.largeText ? '1.25cqw' : ''; desk.classList.toggle('hc', !!state.highContrast); desk.classList.toggle('rm', !!state.reduceMotion);
+  const scr = $('#screen'); scr.style.fontSize = state.largeText ? '1.25cqw' : ''; desk.classList.toggle('gm', !!state.gameMode); hudLoop(); desk.classList.toggle('hc', !!state.highContrast); desk.classList.toggle('rm', !!state.reduceMotion);
   save();
 }
 
+// Game Mode HUD: real frame rate of this page, plus the simulated system numbers
+let hudRaf = 0, hudFrames = 0, hudLast = performance.now(), hudFps = 0, hudPing = 12;
+function hudLoop(){
+  if (!state.gameMode || !state.fpsHud){ cancelAnimationFrame(hudRaf); hudRaf = 0; return; }
+  if (hudRaf) return;
+  const step = now => { hudFrames++; if (now - hudLast >= 500){ hudFps = Math.round(hudFrames * 1000 / (now - hudLast)); hudFrames = 0; hudLast = now; hudPing = Math.max(4, Math.round(hudPing + (Math.random() - .5) * 3)); const h = $('#hud'); if (h) h.textContent = `${hudFps} FPS   ${(1000 / Math.max(1, hudFps)).toFixed(1)} ms\nGPU ${(62 + Math.random() * 8) | 0}%  CPU ${(31 + Math.random() * 6) | 0}%  ${hudPing} ms ping\nperformance · bg apps: 0`; } hudRaf = requestAnimationFrame(step); };
+  hudRaf = requestAnimationFrame(step);
+}
+function setGameMode(on){
+  state.gameMode = on;
+  if (on){ state.powerMode = 'performance'; state.dnd = true; closeAll(); WM.all().forEach(w => { if (!['games','web','music'].includes(w.dataset.app)) WM.minimize(w); }); notify('Game Mode on', 'Performance power, notifications held, background apps stopped, indexing paused', 'games'); }
+  else { state.powerMode = 'balanced'; state.dnd = false; notify('Game Mode off', 'Back to balanced', 'games'); }
+  applyState(); listeners.fs.forEach(f => f());
+}
 /* =============== SCENES =============== */
 let bootTimer = null;
 function go(name){
@@ -1183,6 +1204,7 @@ function renderQs(){
       <button class="qt ${state.powerMode==='performance'?'on':''}" data-t="power"><svg viewBox="0 0 16 16"><path d="M9 1 3 9h4l-1 6 7-9H9z"/></svg><span><b>Power Mode</b><span>${state.powerMode==='performance'?'Performance':'Balanced'}</span></span></button>
       <button class="qt ${state.night?'on':''}" data-t="night"><svg viewBox="0 0 16 16"><path d="M6 1a7 7 0 1 0 9 9 6 6 0 0 1-9-9z"/></svg><span><b>Night Light</b><span>${state.night?'On':'Off'}</span></span></button>
       <button class="qt ${state.scheme==='dark'?'on':''}" data-t="dark"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14zm0 1.5v11a5.5 5.5 0 0 1 0-11z"/></svg><span><b>Dark Style</b><span>${state.scheme==='dark'?'On':'Off'}</span></span></button>
+      <button class="qt ${state.gameMode?'on':''}" data-t="game"><svg viewBox="0 0 16 16"><path d="M4 4h8a3 3 0 0 1 3 3v1a2 2 0 0 1-3.5 1.3L10.6 8H5.4l-.9 1.3A2 2 0 0 1 1 8V7a3 3 0 0 1 3-3zm1 2v3M3.5 7.5h3M11 6.5a.7.7 0 1 0 0 .1zm1.5 1.5a.7.7 0 1 0 0 .1z"/></svg><span><b>Game Mode</b><span>${state.gameMode?'On':'Off'}</span></span></button>
       <button class="qt" data-t="shot"><svg viewBox="0 0 16 16"><path d="M6 2 5 4H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2l-1-2zm2 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg><span><b>Screenshot</b><span>Super+Shift+S</span></span></button>
     </div>
     <div class="qs-sl"><svg viewBox="0 0 16 16"><path d="M2 6v4h3l4 3V3L5 6zm9.5 2a2.5 2.5 0 0 0-1.5-2.3v4.6A2.5 2.5 0 0 0 11.5 8z"/></svg><input type="range" class="r" id="qsVol" min="0" max="100" value="${state.volume}" aria-label="Volume"></div>
@@ -1193,6 +1215,7 @@ function renderQs(){
     if (!t) return; const k = t.dataset.t;
     if (k === 'wifi') state.wifi = !state.wifi; if (k === 'bt') state.bt = !state.bt; if (k === 'night') state.night = !state.night;
     if (k === 'dark') state.scheme = state.scheme === 'dark' ? 'light' : 'dark'; if (k === 'power') state.powerMode = state.powerMode === 'performance' ? 'balanced' : 'performance';
+    if (k === 'game'){ setGameMode(!state.gameMode); renderQs(); return; }
     if (k === 'shot'){ closeAll(); openShot(); return; }
     applyState(); renderQs(); listeners.fs.forEach(f => f());
   };
@@ -1402,7 +1425,7 @@ function toast(t, s, icon='dive'){ if (state.dnd) { notify(t, s || '', icon); re
 $$('.keys [data-key]').forEach(b => b.addEventListener('click', () => { go('desktop'); act(b.dataset.key); }));
 function act(k){
   if (k === 'dmenu') toggle(dmenu); if (k === 'grid') toggle(agridOv, () => $('#gsearch').focus()); if (k === 'clip') toggle(popClip, showBar);
-  if (k === 'shot') { closeAll(); openShot(); } if (k === 'lock') lockScreen();
+  if (k === 'shot') { closeAll(); openShot(); } if (k === 'lock') lockScreen(); if (k === 'game') setGameMode(!state.gameMode);
 }
 let metaAlone = false;
 document.addEventListener('keydown', e => {
@@ -1416,6 +1439,7 @@ document.addEventListener('keydown', e => {
     metaAlone = false; const k = e.key.toLowerCase();
     if (e.shiftKey && k === 's'){ e.preventDefault(); act('shot'); } else if (k === 'a'){ e.preventDefault(); act('grid'); } else if (k === 'v'){ e.preventDefault(); act('clip'); } else if (k === 'l'){ e.preventDefault(); act('lock'); }
     else if (k === 'q'){ const f = WM.focused(); if (f){ e.preventDefault(); WM.close(f); } }
+    else if (k === 'g'){ e.preventDefault(); setGameMode(!state.gameMode); }
     else if (e.key === 'Tab'){ e.preventDefault(); switcherStep(e.shiftKey ? -1 : 1); }
   }
   if (e.altKey && e.key === 'Tab'){ e.preventDefault(); switcherStep(e.shiftKey ? -1 : 1); }
@@ -1470,7 +1494,7 @@ for (const s of ['#agrid', '#pinned']) $(s).addEventListener('contextmenu', e =>
 /* =============== APPS =============== */
 const APPDEFS = {};
 const svgi = p => `<svg viewBox="0 0 16 16"><path d="${p}"/></svg>`;
-const I = { back:'M10 2 4 8l6 6 1.4-1.4L6.8 8l4.6-4.6z', fwd:'M6 2l6 6-6 6-1.4-1.4L9.2 8 4.6 3.4z', up:'M8 3l6 6-1.4 1.4L8 5.8l-4.6 4.6L2 9z', reload:'M8 2a6 6 0 1 0 5.7 4H12a4.5 4.5 0 1 1-1.3-3.2L9 4.5h5V0l-1.7 1.7A6 6 0 0 0 8 2z', plus:'M7 2h2v5h5v2H9v5H7V9H2V7h5z', play:'M4 2l10 6-10 6z', pause:'M4 2h3v12H4zm5 0h3v12H9z', next:'M3 2l8 6-8 6zm9 0h2v12h-2z', prev:'M13 2 5 8l8 6zM2 2h2v12H2z', send:'M1 2l14 6-14 6 2-6zm2.4 1.9L3 6.6l6-0.6-6-.6z', trash:'M6 1h4l1 2h3v2H2V3h3zM3 6h10l-1 9H4z', star:'m8 1 2.2 4.5 5 .7-3.6 3.5.9 5L8 12.3 3.5 14.7l.9-5L.8 6.2l5-.7z', check:'m3 8 3 3 7-7-1.4-1.4L6 8.2 4.4 6.6z', gear:'M6.8 1h2.4l.4 2a5 5 0 0 1 1.3.8l1.9-.7 1.2 2.1-1.5 1.3a5 5 0 0 1 0 1.5l1.5 1.3-1.2 2.1-1.9-.7a5 5 0 0 1-1.3.8l-.4 2H6.8l-.4-2a5 5 0 0 1-1.3-.8l-1.9.7L2 8.4l1.5-1.3a5 5 0 0 1 0-1.5L2 4.3l1.2-2.1 1.9.7a5 5 0 0 1 1.3-.8zM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z', home:'M8 1 1 7h2v7h4v-4h2v4h4V7h2z', fold:'M1 3h5l1 1h8v9H1z', doc:'M3 1h7l3 3v11H3z', pic:'M1 3h14v10H1zm2 8 3-4 2 3 2-2 3 3z', dl:'M7 1h2v7l3-3 1 1-5 5-5-5 1-1 3 3zM2 13h12v2H2z', drive:'M2 4h12v8H2zm1 6h2v1H3z', music:'M6 2v9.3A2.5 2.5 0 1 0 8 13.5V5l5-1V2z', vid:'M1 4h10v8H1zm10 2 4-2v8l-4-2z', wifi:'M8 13.5a1.2 1.2 0 1 0 0 .1zM5.2 10.2a4 4 0 0 1 5.6 0l1.4-1.4a6 6 0 0 0-8.4 0zM2.4 7.4a8 8 0 0 1 11.2 0L15 6A10 10 0 0 0 1 6z', bt:'M7 1v5.6L4.3 3.9 3.2 5l3 3-3 3 1.1 1.1L7 9.4V15h1l3.6-3.6L9.4 8l2.2-3.4L8 1zm1 2.6 1.5 1.5L8 6.6zm0 5.8 1.5 1.5L8 12.4z', brush:'M13 1l2 2-7 7-2-2zM5 9l2 2-1 3-4 1 1-4z', eraser:'M9 1l6 6-7 7H4L1 11zm-3 12 4-4-4-4-3.5 3.5z', mail:'M1 3h14v10H1zm1.5 1.5L8 9l5.5-4.5', cal:'M2 3h12v11H2zm1 3v7h10V6zM4 1h2v3H4zm6 0h2v3h-2z' };
+const I = { back:'M10 2 4 8l6 6 1.4-1.4L6.8 8l4.6-4.6z', fwd:'M6 2l6 6-6 6-1.4-1.4L9.2 8 4.6 3.4z', up:'M8 3l6 6-1.4 1.4L8 5.8l-4.6 4.6L2 9z', reload:'M8 2a6 6 0 1 0 5.7 4H12a4.5 4.5 0 1 1-1.3-3.2L9 4.5h5V0l-1.7 1.7A6 6 0 0 0 8 2z', plus:'M7 2h2v5h5v2H9v5H7V9H2V7h5z', play:'M4 2l10 6-10 6z', pause:'M4 2h3v12H4zm5 0h3v12H9z', next:'M3 2l8 6-8 6zm9 0h2v12h-2z', prev:'M13 2 5 8l8 6zM2 2h2v12H2z', send:'M1 2l14 6-14 6 2-6zm2.4 1.9L3 6.6l6-0.6-6-.6z', trash:'M6 1h4l1 2h3v2H2V3h3zM3 6h10l-1 9H4z', star:'m8 1 2.2 4.5 5 .7-3.6 3.5.9 5L8 12.3 3.5 14.7l.9-5L.8 6.2l5-.7z', check:'m3 8 3 3 7-7-1.4-1.4L6 8.2 4.4 6.6z', gear:'M6.8 1h2.4l.4 2a5 5 0 0 1 1.3.8l1.9-.7 1.2 2.1-1.5 1.3a5 5 0 0 1 0 1.5l1.5 1.3-1.2 2.1-1.9-.7a5 5 0 0 1-1.3.8l-.4 2H6.8l-.4-2a5 5 0 0 1-1.3-.8l-1.9.7L2 8.4l1.5-1.3a5 5 0 0 1 0-1.5L2 4.3l1.2-2.1 1.9.7a5 5 0 0 1 1.3-.8zM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z', home:'M8 1 1 7h2v7h4v-4h2v4h4V7h2z', fold:'M1 3h5l1 1h8v9H1z', doc:'M3 1h7l3 3v11H3z', pic:'M1 3h14v10H1zm2 8 3-4 2 3 2-2 3 3z', dl:'M7 1h2v7l3-3 1 1-5 5-5-5 1-1 3 3zM2 13h12v2H2z', drive:'M2 4h12v8H2zm1 6h2v1H3z', music:'M6 2v9.3A2.5 2.5 0 1 0 8 13.5V5l5-1V2z', vid:'M1 4h10v8H1zm10 2 4-2v8l-4-2z', wifi:'M8 13.5a1.2 1.2 0 1 0 0 .1zM5.2 10.2a4 4 0 0 1 5.6 0l1.4-1.4a6 6 0 0 0-8.4 0zM2.4 7.4a8 8 0 0 1 11.2 0L15 6A10 10 0 0 0 1 6z', bt:'M7 1v5.6L4.3 3.9 3.2 5l3 3-3 3 1.1 1.1L7 9.4V15h1l3.6-3.6L9.4 8l2.2-3.4L8 1zm1 2.6 1.5 1.5L8 6.6zm0 5.8 1.5 1.5L8 12.4z', brush:'M13 1l2 2-7 7-2-2zM5 9l2 2-1 3-4 1 1-4z', eraser:'M9 1l6 6-7 7H4L1 11zm-3 12 4-4-4-4-3.5 3.5z', mail:'M1 3h14v10H1zm1.5 1.5L8 9l5.5-4.5', cal:'M2 3h12v11H2zm1 3v7h10V6zM4 1h2v3H4zm6 0h2v3h-2z', games:'M4 4h8a3 3 0 0 1 3 3v1a2 2 0 0 1-3.5 1.3L10.6 8H5.4l-.9 1.3A2 2 0 0 1 1 8V7a3 3 0 0 1 3-3zm1 2v3M3.5 7.5h3M11 6.5a.7.7 0 1 0 0 .1zm1.5 1.5a.7.7 0 1 0 0 .1z' };
 const ib = (p, title='', data='') => `<button class="ib" title="${esc(title)}" ${data}>${svgi(p)}</button>`;
 
 /* ---------- Files ---------- */
@@ -1650,7 +1674,7 @@ APPDEFS.term = {
 };
 
 /* ---------- Settings ---------- */
-const SPAGES = [['wifi','Wi‑Fi','wifi'],['bt','Bluetooth','bt'],['notifications','Notifications','mail'],['-','Personal'],['appearance','Appearance','pic'],['dock','Dock','fold'],['displays','Displays','vid'],['sound','Sound','music'],['-','Devices'],['mouse','Mouse & Touchpad','gear'],['keyboard','Keyboard','doc'],['power','Power','gear'],['-','System'],['privacy','Privacy','gear'],['datetime','Date & Time','cal'],['region','Region & Language','home'],['accessibility','Accessibility','home'],['apps','Apps','fold'],['storage','Storage','drive'],['users','Users','home'],['about','About','doc']];
+const SPAGES = [['wifi','Wi‑Fi','wifi'],['bt','Bluetooth','bt'],['notifications','Notifications','mail'],['-','Personal'],['appearance','Appearance','pic'],['dock','Dock','fold'],['displays','Displays','vid'],['sound','Sound','music'],['gaming','Gaming','games'],['-','Devices'],['mouse','Mouse & Touchpad','gear'],['keyboard','Keyboard','doc'],['power','Power','gear'],['-','System'],['privacy','Privacy','gear'],['datetime','Date & Time','cal'],['region','Region & Language','home'],['accessibility','Accessibility','home'],['apps','Apps','fold'],['storage','Storage','drive'],['users','Users','home'],['about','About','doc']];
 const SHORTCUTS = [['Super','Dive menu'],['Super + A','All apps'],['Super + Shift + S','Screenshot or screencast'],['Super + V','Clipboard history'],['Super + L','Lock screen'],['Super + Q','Close window'],['Alt + Tab','Switch windows'],['Super + Tab','Switch windows'],['Esc','Close menus']];
 const APP_NOTIF = ['chat','mail','cal','store','bridge','music','web'];
 const ACCENTS = ['#2f9aae','#3584e4','#813d9c','#e01b24','#e66100','#26a269','#c64600','#63452c','#5e5c64'];
@@ -1679,6 +1703,9 @@ APPDEFS.settings = {
       if (p === 'accessibility') body = `<h3>Accessibility</h3><div class="grp"><div class="rw"><span class="tx"><b>Large Text</b><span>Makes everything on screen bigger</span></span>${sw('largeText', state.largeText)}</div><div class="rw"><span class="tx"><b>High Contrast</b></span>${sw('highContrast', state.highContrast)}</div><div class="rw"><span class="tx"><b>Reduce Animations</b></span>${sw('reduceMotion', state.reduceMotion)}</div><div class="rw"><span class="tx"><b>Cursor size</b></span><span class="seg">${['Default','Large','Largest'].map(v => `<button data-selk="cursor" data-selv="${v}" class="${(state.cursor||'Default')===v?'on':''}">${v}</button>`).join('')}</span></div><div class="rw"><span class="tx"><b>Screen Reader</b><span>Reads what is on screen aloud</span></span>${sw('reader', !!state.reader)}</div><div class="rw"><span class="tx"><b>Sticky Keys</b></span>${sw('sticky', !!state.sticky)}</div></div>`;
       if (p === 'apps') body = `<h3>Apps</h3><h3 style="font-size:1cqw">Default apps</h3><div class="grp"><div class="rw"><span class="tx"><b>Web</b></span><select class="f" data-selk="defaultBrowser">${APPS.filter(a => ['web','ps','word'].includes(a.id) || a.extra).filter(a => a.id === 'web' || a.extra).map(a => `<option value="${a.id}" ${state.defaultBrowser===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div><div class="rw"><span class="tx"><b>Mail</b></span><select class="f" data-selk="defaultMail"><option value="mail">Mail</option><option value="web">Chromium (webmail)</option></select></div><div class="rw"><span class="tx"><b>Music</b></span><select class="f" data-selk="defaultMusic"><option value="music">Music</option>${state.installed.includes('spotify') ? '<option value="spotify">Spotify</option>' : ''}</select></div></div><h3 style="font-size:1cqw">Installed</h3><div class="grp">${APPS.map(a => `<div class="rw">${appIco(a)}<span class="tx"><b>${esc(a.name)}</b><span>${a.exe ? 'Windows program · Dive Bridge' : a.extra ? 'Flatpak · Software' : 'Built in'}</span></span>${a.extra || (a.exe && a.id !== 'notepad') ? `<button class="btn sm" data-rmapp="${a.id}">Remove</button>` : ''}</div>`).join('')}</div>`;
       if (p === 'storage'){ const sizes = {}; const walk = (n, top) => { for (const [k, v] of Object.entries(n.children || {})){ const t = top || k; if (v.type === 'folder') walk(v, t); else sizes[t] = (sizes[t] || 0) + (v.size || 0); } }; walk(fsGet(['Home'])); const rows = [['System', 8.4e9, '#7f8c9b'], ['Apps', 6.1e9 + state.installed.length * .8e9, '#3aa0ff'], ['Windows programs', 2.6e9 * (1 + state.installed.filter(i => byId(i)?.exe).length), '#0078d4'], ...Object.entries(sizes).filter(([k]) => k !== 'Windows files').sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => [k, v, '#26a269'])]; const used = rows.reduce((a, r) => a + r[1], 0), total = 120e9; body = `<h3>Storage</h3><div class="grp"><div class="rw" style="display:block"><div style="display:flex;justify-content:space-between;font-size:.9cqw"><b>Dive (120 GB)</b><span class="v">${fmtSize(used)} used · ${fmtSize(total - used)} free</span></div><div style="display:flex;height:1.2cqw;border-radius:.3cqw;overflow:hidden;margin-top:.5cqw;background:var(--hover)">${rows.map(([k, v, col]) => `<i title="${k}" style="width:${v / total * 100}%;background:${col}"></i>`).join('')}</div></div>${rows.map(([k, v, col]) => `<div class="rw"><i style="width:.8cqw;height:.8cqw;border-radius:.2cqw;background:${col};display:inline-block"></i><span class="tx"><b>${esc(k)}</b></span><span class="v">${fmtSize(v)}</span></div>`).join('')}</div><div class="grp"><div class="rw"><span class="tx"><b>Windows (C:)</b><span>612 GB · mounted read-only</span></span><span class="v">438 GB used</span></div><div class="rw"><span class="tx"><b>Trash</b><span>${TRASH.length} items</span></span><button class="btn sm" data-clear="trash">Empty</button></div></div>`; }
+      if (p === 'gaming') body = `<h3>Gaming</h3><div class="grp"><div class="rw"><span class="tx"><b>Game Mode</b><span>Performance power, notifications held, indexing and background updates stopped, other windows minimized. Super+G, or the tile in quick settings. Turns on by itself when a game starts.</span></span>${sw('gameMode', state.gameMode)}</div><div class="rw"><span class="tx"><b>FPS overlay</b><span>Frame rate, frame time, GPU, CPU and ping in the corner (MangoHud, Shift+F12 in games)</span></span>${sw('fpsHud', state.fpsHud)}</div></div>
+        <h3 style="font-size:1cqw">Display and input</h3><div class="grp"><div class="rw"><span class="tx"><b>Variable refresh rate</b><span>Lets the monitor follow the game's frame rate. No tearing, no stutter.</span></span>${sw('vrr', state.vrr)}</div><div class="rw"><span class="tx"><b>Mouse acceleration</b><span>Off gives 1:1 aim. Flat profile.</span></span>${sw('mouseAccel', state.mouseAccel)}</div><div class="rw"><span class="tx"><b>Power mode</b></span><span class="seg">${['saver','balanced','performance'].map(m => `<button data-pm="${m}" class="${state.powerMode===m?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</span></div></div>
+        <h3 style="font-size:1cqw">Background</h3><div class="grp"><div class="rw"><span class="tx"><b>Background apps</b><span>${state.bgApps ? 'Allowed' : 'Nothing runs in the background: no indexing, no auto-updates, no crash reporters, no telemetry'}</span></span>${sw('bgApps', state.bgApps)}</div><div class="rw"><span class="tx"><b>Network</b><span>BBR congestion control, TCP fast open, Wi‑Fi power saving off</span></span><span class="v">Low latency</span></div><div class="rw"><span class="tx"><b>Graphics driver</b><span>NVIDIA GeForce RTX 4060 Laptop · driver 580 · Vulkan 1.4</span></span><span class="v">Up to date</span></div><div class="rw"><span class="tx"><b>Windows games</b><span>Steam runs them through Proton. Other launchers through Dive Bridge.</span></span><button class="btn sm" data-open-app="games">Open Games</button></div></div>`;
       if (p === 'about') body = `<h3>About</h3><div class="grp"><div class="rw" style="justify-content:center;padding:1.4cqw">${ico('dive')}</div><div class="rw"><span class="tx"><b>Device Name</b></span><span class="v">dive</span></div><div class="rw"><span class="tx"><b>OS Name</b></span><span class="v">Dive 0.1 (Coral)</span></div><div class="rw"><span class="tx"><b>Base</b></span><span class="v">Fedora 43 · GNOME 49</span></div><div class="rw"><span class="tx"><b>Processor</b></span><span class="v">Intel Core i7-13700H × 20</span></div><div class="rw"><span class="tx"><b>Memory</b></span><span class="v">32 GB</span></div><div class="rw"><span class="tx"><b>Disk</b></span><span class="v">120 GB Dive · 612 GB Windows</span></div><div class="rw"><span class="tx"><b>Windows programs</b></span><span class="v">${1 + state.installed.filter(i => byId(i)?.exe).length} set up through Dive Bridge</span></div><div class="rw"><span class="tx"><b>Software updates</b><span>${state.lastUpdate ? 'Last checked ' + new Date(state.lastUpdate).toLocaleTimeString() : 'Not checked yet'}</span></span><button class="btn sm" data-upd>Check for updates</button></div></div>`;
       win.content.innerHTML = `<div class="a"><div class="a-side" style="width:12.5cqw">${SPAGES.map(([k, n, i]) => k === '-' ? `<div class="h">${n}</div>` : `<button data-pg="${k}" class="${k === p ? 'on' : ''}">${svgi(I[i])}${n}</button>`).join('')}</div><div class="a-main"><div class="a-body pg">${body}</div></div></div>`;
       win.setTitle(SPAGES.find(x => x[0] === p)[1]);
@@ -1686,7 +1713,8 @@ APPDEFS.settings = {
     win.content.addEventListener('click', e => {
       const t = e.target;
       const pg = t.closest('[data-pg]'); if (pg){ win.page = pg.dataset.pg; render(); return; }
-      const swb = t.closest('[data-sw]'); if (swb){ state[swb.dataset.sw] = !state[swb.dataset.sw]; applyState(); render(); return; }
+      const swb = t.closest('[data-sw]'); if (swb){ if (swb.dataset.sw === 'gameMode'){ setGameMode(!state.gameMode); render(); return; } state[swb.dataset.sw] = !state[swb.dataset.sw]; applyState(); render(); return; }
+      const oa = t.closest('[data-open-app]'); if (oa){ WM.open(oa.dataset.openApp); return; }
       const sc = t.closest('.pg [data-scheme]'); if (sc){ state.scheme = sc.dataset.scheme; applyState(); render(); return; }
       const ac = t.closest('[data-acc]'); if (ac){ state.accent = ac.dataset.acc; applyState(); render(); return; }
       const wl = t.closest('[data-wall]'); if (wl){ setWallpaper(wl.dataset.wall); return; }
@@ -1793,7 +1821,8 @@ APPDEFS.chat = {
 APPDEFS.games = {
   geo:[22, 6, 30, 30],
   init(win){
-    win.content.innerHTML = `<div class="game"><div class="hud"><span>Snake</span><span>Score <b id="sc">0</b></span><span>Best <b id="hs">${store.get('snake', 0)}</b></span></div><canvas id="cv" width="360" height="360" style="width:min(80%, 24cqw);aspect-ratio:1"></canvas><div class="hud" id="gmsg">Arrow keys or WASD to move · Space to pause</div></div>`;
+    win.content.innerHTML = `<div class="game"><div class="hud"><span>Snake</span><span>Score <b id="sc">0</b></span><span>Best <b id="hs">${store.get('snake', 0)}</b></span></div><canvas id="cv" width="360" height="360" style="width:min(80%, 24cqw);aspect-ratio:1"></canvas><div class="hud" id="gmsg">Arrow keys or WASD to move · Space to pause</div><button class="btn sm" data-gm style="margin-top:.4cqw">${state.gameMode ? 'Game Mode is on' : 'Turn on Game Mode'}</button></div>`;
+    win.content.querySelector('[data-gm]').addEventListener('click', () => { setGameMode(!state.gameMode); win.content.querySelector('[data-gm]').textContent = state.gameMode ? 'Game Mode is on' : 'Turn on Game Mode'; });
     const cv = win.content.querySelector('#cv'), c = cv.getContext('2d'), N = 20, S = 18;
     let snake, dir, nd, food, score, dead, paused, timer;
     const reset = () => { snake = [[10,10],[9,10],[8,10]]; dir = [1,0]; nd = dir; score = 0; dead = false; paused = false; place(); win.content.querySelector('#sc').textContent = 0; win.content.querySelector('#gmsg').textContent = 'Arrow keys or WASD to move · Space to pause'; };
